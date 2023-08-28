@@ -60,7 +60,7 @@ runs:
         # force initiating a new session when requested via action input (GitHub
         # Actions caches are immutable and can't be updated for a given key).
         # @see https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache
-        echo -n "key=${{ steps.cache.outputs.restore-key }}-${{ github.run_id }}" >> $GITHUB_OUTPUT
+        echo "key=${GITHUB_OUTPUT['restore-key']}-${{ github.run_id }}" >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Restore encrypted terminus session file from GitHub Actions cache
