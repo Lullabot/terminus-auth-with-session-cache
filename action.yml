@@ -56,6 +56,10 @@ runs:
         echo "path=${{ runner.temp }}/terminus-session.gpg" >> $GITHUB_OUTPUT
         echo -n "restore-key=terminus-session-" >> $GITHUB_OUTPUT
         echo ${{ inputs.pantheon-machine-token }} | sha256sum | head -c 40 >> $GITHUB_OUTPUT
+        # Add the GitHub Actions unique "run id" to the cache key so that we can
+        # force initiating a new session when requested via action input (GitHub
+        # Actions caches are immutable and can't be updated for a given key).
+        # @see https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache
         echo -n "key=${{ steps.cache.outputs.restore-key }}-${{ github.run_id }}" >> $GITHUB_OUTPUT
       shell: bash
 
@@ -65,8 +69,9 @@ runs:
       uses: actions/cache/restore@v3
       with:
         path: ${{ steps.cache.outputs.path }}
+        key: ${{ steps.cache.outputs.key }}
         restore-keys: |
-          ${{ steps.cache.outputs.key }}-
+          ${{ steps.cache.outputs.restore-key }}-
         enableCrossOsArchive: true
 
     - name: Decrypt cached session file and move into Terminus cache directory
@@ -111,5 +116,5 @@ runs:
       uses: actions/cache/save@v3
       with:
         path:  ${{ steps.cache.outputs.path }}
-        key: ${{ steps.cache.outputs.key }}-${{ github.run_id }}
+        key: ${{ steps.cache.outputs.key }}
         enableCrossOsArchive: true
