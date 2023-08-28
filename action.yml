@@ -1,0 +1,119 @@
+name: Authenticate Terminus from existing session, or initiate new session
+description: Restores a Pantheon Terminus session by decrypting the cached
+  session file and copying it into place. If existing session is missing or
+  expired, initiates a new session, then encrypts and saves it to Actions cache.
+  Also, installs Terminus on host if needed.
+
+inputs:
+  pantheon-machine-token:
+    description: Pantheon Terminus machine token, used as the gpg "symmetric"
+      encryption passphrase to decrypt the terminus session file.
+    required: true
+  force-new-session:
+    description: Set this to true to skip pulling session from cache and force
+      creating a new session. E.g., for a nightly cron job that initiates a new
+      Terminus session for the upcoming day.
+    required: false
+    default: false
+  ddev:
+    description: Set to TRUE to authenticate Terminus inside the DDEV container.
+    required: false
+    default: false
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Set Terminus cache directory so we don't have to guess
+      if: inputs.ddev != 'true'
+      working-directory: ${{ runner.temp }}
+      run: |
+        echo TERMINUS_CACHE_DIR=${TERMINUS_CACHE_DIR:-~/.terminus/cache} >> $GITHUB_ENV
+        # Also, install Terminus if missing.
+        hash terminus 2> /dev/null || \
+          curl -O https://raw.githubusercontent.com/pantheon-systems/terminus-installer/master/builds/installer.phar && \
+          php installer.phar install &> /dev/null
+      shell: bash
+
+    - name: Set some environment variables when using DDEV
+      if: inputs.ddev == 'true'
+      run: |
+        # Set a helper variable to optionally execute commands inside DDEV.
+        echo exec='ddev exec' >> $GITHUB_ENV
+        # Pull DDEV's Terminus cache directory setting into a local variable.
+        echo -n TERMINUS_CACHE_DIR= >> $GITHUB_ENV
+        ddev exec 'echo ${TERMINUS_CACHE_DIR:-~/.terminus/cache}' >> $GITHUB_ENV
+      shell: bash
+
+    - name: Ensure Terminus cache directory exists
+      run: |
+        $exec mkdir -p $TERMINUS_CACHE_DIR
+      shell: bash
+
+    - name: Set a cache path and key
+      id: cache
+      run: |
+        echo "path=${{ runner.temp }}/terminus-session.gpg" >> $GITHUB_OUTPUT
+        echo -n "key=terminus-session-" >> $GITHUB_OUTPUT
+        echo ${{ inputs.pantheon-machine-token }} | sha256sum | head -c 40 >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Restore encrypted terminus session file from GitHub Actions cache
+      id: restore-cache
+      if: inputs.force-new-session != 'true'
+      uses: actions/cache/restore@v3
+      with:
+        path: ${{ steps.cache.outputs.path }}
+        # Add the GitHub Actions unique "run id" to the cache key so that we can
+        # force initiating a new session when requested via action input (GitHub
+        # Actions caches are immutable and can't be updated for a given key).
+        # @see https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache
+        key: ${{ steps.cache.outputs.key }}-${{ github.run_id }}
+        restore-keys: |
+          ${{ steps.cache.outputs.key }}-
+        enableCrossOsArchive: true
+
+    - name: Decrypt cached session file and move into Terminus cache directory
+      id: decrypt
+      if: steps.restore-cache.outcome == 'success'
+      run: |
+        # Verify that the encrypted session file was restored.
+        test -s ${{ steps.cache.outputs.path }}
+        # Decrypt the session to a temporary file. Using an interim temp output
+        # file for the encryption/decryption steps avoids errors when the
+        # destination file already exists, and makes it easier to support DDEV.
+        gpg --decrypt \
+            --passphrase ${{ inputs.pantheon-machine-token }} \
+            --pinentry loopback \
+            --output terminus-session-temp \
+            ${{ steps.cache.outputs.path }}
+        # Move the session file into place.
+        $exec mv terminus-session-temp $TERMINUS_CACHE_DIR/session
+        # Check if restored session is still valid (normally lasts 24 hours).
+        $exec terminus auth:whoami | grep -v "You are not logged in"
+      continue-on-error: true
+      shell: bash
+
+
+    - name: Initiate a new Terminus session if the old one was not valid or
+        a new session was requested, and encrypt new session file into GitHub
+        Actions cache path
+      id: encrypt
+      if: steps.decrypt.outcome != 'success'
+      run: |
+        $exec terminus auth:login --machine-token ${{ inputs.pantheon-machine-token }}
+        $exec gpg --symmetric \
+            --pinentry-mode loopback \
+            --passphrase ${{ inputs.pantheon-machine-token }} \
+            --output terminus-session-temp.gpg \
+            $TERMINUS_CACHE_DIR/session
+        mv terminus-session-temp.gpg ${{ steps.cache.outputs.path }}
+      shell: bash
+
+    - name: Save encrypted Terminus session file into GitHub Actions cache
+      if: steps.encrypt.outcome == 'success'
+      uses: actions/cache/save@v3
+      with:
+        path:  ${{ steps.cache.outputs.path }}
+        key: ${{ steps.cache.outputs.key }}-${{ github.run_id }}
+        enableCrossOsArchive: true
