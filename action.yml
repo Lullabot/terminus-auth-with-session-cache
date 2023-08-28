@@ -56,7 +56,7 @@ runs:
         # Set cache path.
         echo "path=${{ runner.temp }}/terminus-session.gpg" >> $GITHUB_OUTPUT
         # Set cache restore key.
-        machine_token_hash=`${{ inputs.pantheon-machine-token }} | sha256sum | head -c 40`
+        machine_token_hash=`echo ${{ inputs.pantheon-machine-token }} | sha256sum | head -c 40`
         restore_key="terminus-session-$machine_token_hash"
         echo "restore-key=$restore_key-" >> $GITHUB_OUTPUT
         # Add the GitHub Actions unique "run id" to the cache key so that we can
