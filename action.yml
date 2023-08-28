@@ -28,7 +28,9 @@ runs:
       if: inputs.ddev != 'true'
       working-directory: ${{ runner.temp }}
       run: |
+        # Set Terminus cache directory so we don't have to guess.
         echo TERMINUS_CACHE_DIR=${TERMINUS_CACHE_DIR:-~/.terminus/cache} >> $GITHUB_ENV
+
         # Also, install Terminus if missing.
         hash terminus 2> /dev/null || \
           curl -O https://raw.githubusercontent.com/pantheon-systems/terminus-installer/master/builds/installer.phar && \
@@ -38,8 +40,11 @@ runs:
     - name: Set some environment variables when using DDEV
       if: inputs.ddev == 'true'
       run: |
-        # Set a helper variable to optionally execute commands inside DDEV.
+        # Set some environment variables when using DDEV
+
+        # Helper variable to optionally execute commands inside DDEV.
         echo exec='ddev exec' >> $GITHUB_ENV
+
         # Pull DDEV's Terminus cache directory setting into a local variable.
         echo -n TERMINUS_CACHE_DIR= >> $GITHUB_ENV
         ddev exec 'echo ${TERMINUS_CACHE_DIR:-~/.terminus/cache}' >> $GITHUB_ENV
@@ -47,21 +52,24 @@ runs:
 
     - name: Ensure Terminus cache directory exists
       run: |
+        # Ensure Terminus cache directory exists.
         $exec mkdir -p $TERMINUS_CACHE_DIR
       shell: bash
 
-    - name: Set a cache path and key
+    - name: Set a cache path, key, and restore-key
       id: cache
       run: |
-        # Set cache path.
+        # Set cache path, key, and restore-key.
         echo "path=${{ runner.temp }}/terminus-session.gpg" >> $GITHUB_OUTPUT
-        # Set cache restore key.
+
         machine_token_hash=`echo ${{ inputs.pantheon-machine-token }} | sha256sum | head -c 40`
         restore_key="terminus-session-$machine_token_hash"
         echo "restore-key=$restore_key-" >> $GITHUB_OUTPUT
-        # Add the GitHub Actions unique "run id" to the cache key so that we can
-        # force initiating a new session when requested via action input (GitHub
-        # Actions caches are immutable and can't be updated for a given key).
+
+        # Use the GitHub Actions "run id" to uniqify the cache key so that we
+        # can force initiating a new session when requested via action input
+        # (GitHub Actions caches are immutable and can't be updated for a given
+        # key).
         # @see https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache
         echo "key=$restore_key-${{ github.run_id }}" >> $GITHUB_OUTPUT
       shell: bash
@@ -81,8 +89,11 @@ runs:
       id: decrypt
       if: steps.restore-cache.outcome == 'success'
       run: |
+        # Decrypt cached session file and move into Terminus cache directory
+
         # Verify that the encrypted session file was restored from cache.
         test -s ${{ steps.cache.outputs.path }}
+
         # Decrypt the session to a temporary file. Using an interim temp output
         # file for the encryption/decryption steps avoids errors when the
         # destination file already exists, and makes it easier to support DDEV.
@@ -91,13 +102,14 @@ runs:
             --pinentry loopback \
             --output terminus-session-temp \
             ${{ steps.cache.outputs.path }}
+
         # Move the session file into place.
         $exec mv terminus-session-temp $TERMINUS_CACHE_DIR/session
+
         # Check if restored session is still valid (normally lasts 24 hours).
         $exec terminus auth:whoami | grep -v "You are not logged in"
       continue-on-error: true
       shell: bash
-
 
     - name: Initiate a new Terminus session if the old one was not valid or
         a new session was requested, and encrypt new session file into GitHub
@@ -105,6 +117,9 @@ runs:
       id: encrypt
       if: steps.decrypt.outcome != 'success'
       run: |
+        # Initiate a new Terminus session because the old one was missing or
+        # expired, and encrypt new session file into GitHub Actions cache path.
+
         $exec terminus auth:login --machine-token ${{ inputs.pantheon-machine-token }}
         $exec gpg --symmetric \
             --pinentry-mode loopback \
