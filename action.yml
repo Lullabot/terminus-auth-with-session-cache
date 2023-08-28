@@ -64,11 +64,6 @@ runs:
       uses: actions/cache/restore@v3
       with:
         path: ${{ steps.cache.outputs.path }}
-        # Add the GitHub Actions unique "run id" to the cache key so that we can
-        # force initiating a new session when requested via action input (GitHub
-        # Actions caches are immutable and can't be updated for a given key).
-        # @see https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache
-        key: ${{ steps.cache.outputs.key }}-${{ github.run_id }}
         restore-keys: |
           ${{ steps.cache.outputs.key }}-
         enableCrossOsArchive: true
@@ -77,7 +72,7 @@ runs:
       id: decrypt
       if: steps.restore-cache.outcome == 'success'
       run: |
-        # Verify that the encrypted session file was restored.
+        # Verify that the encrypted session file was restored from cache.
         test -s ${{ steps.cache.outputs.path }}
         # Decrypt the session to a temporary file. Using an interim temp output
         # file for the encryption/decryption steps avoids errors when the
