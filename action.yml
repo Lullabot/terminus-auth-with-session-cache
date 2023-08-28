@@ -54,8 +54,9 @@ runs:
       id: cache
       run: |
         echo "path=${{ runner.temp }}/terminus-session.gpg" >> $GITHUB_OUTPUT
-        echo -n "key=terminus-session-" >> $GITHUB_OUTPUT
+        echo -n "restore-key=terminus-session-" >> $GITHUB_OUTPUT
         echo ${{ inputs.pantheon-machine-token }} | sha256sum | head -c 40 >> $GITHUB_OUTPUT
+        echo -n "key=${{ steps.cache.outputs.restore-key }}-${{ github.run_id }}" >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Restore encrypted terminus session file from GitHub Actions cache
