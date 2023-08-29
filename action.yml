@@ -97,10 +97,13 @@ runs:
         # Decrypt the session to a temporary file. Using an interim temp output
         # file for the encryption/decryption steps avoids errors when the
         # destination file already exists, and makes it easier to support DDEV.
-        gpg --decrypt \
-            --passphrase ${{ inputs.pantheon-machine-token }} \
-            --pinentry loopback \
+        echo ${{ inputs.pantheon-machine-token }} | \
+          gpg2 \
+            --decrypt \
             --output terminus-session-temp \
+            --passphrase-fd \
+            --batch \
+            --pinentry loopback \
             ${{ steps.cache.outputs.path }}
 
         # Move the session file into place.
@@ -119,13 +122,19 @@ runs:
       run: |
         # Initiate a new Terminus session because the old one was missing or
         # expired, and encrypt new session file into GitHub Actions cache path.
-
         $exec terminus auth:login --machine-token ${{ inputs.pantheon-machine-token }}
-        $exec gpg --symmetric \
-            --pinentry-mode loopback \
-            --passphrase ${{ inputs.pantheon-machine-token }} \
-            --output terminus-session-temp.gpg \
-            $TERMINUS_CACHE_DIR/session
+
+        # Encrypt the session file.
+        $exec cat $TERMINUS_CACHE_DIR/session | \
+          echo ${{ inputs.pantheon-machine-token }} | \
+            gpg2 \
+              --symmetric \
+              --output terminus-session-temp.gpg \
+              --passphrase-fd \
+              --batch \
+              --pinentry-mode loopback
+
+        # Move the encrypted session file into the cache path.
         mv terminus-session-temp.gpg ${{ steps.cache.outputs.path }}
       shell: bash
 
