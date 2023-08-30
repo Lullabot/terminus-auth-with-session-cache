@@ -98,10 +98,10 @@ runs:
         # file for the encryption/decryption steps avoids errors when the
         # destination file already exists, and makes it easier to support DDEV.
         echo ${{ inputs.pantheon-machine-token }} | \
-          gpg2 --output terminus-session-temp \
-               --passphrase-fd \
+          gpg2 --passphrase-fd \
                --batch \
                --pinentry loopback \
+               --output terminus-session-temp \
                --decrypt ${{ steps.cache.outputs.path }}
 
         # Move the session file into place.
