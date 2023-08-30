@@ -94,17 +94,19 @@ runs:
         # Verify that the encrypted session file was restored from cache.
         test -s ${{ steps.cache.outputs.path }}
 
-        # Decrypt the session to a temporary file. Using an interim temp output
-        # file for the encryption/decryption steps avoids errors when the
-        # destination file already exists, and makes it easier to support DDEV.
+        # Decrypt the session file using the "file descriptor" passphrase option
+        # (--passphrase-fd) instead of regular --passphrase because it's more
+        # secure to pipe the secret than to pass it as a command argument (which
+        # would expose our machine token in the process list while decrypting).
         echo ${{ inputs.pantheon-machine-token }} | \
           gpg2 --passphrase-fd \
                --batch \
+               --yes \
                --pinentry loopback \
                --output terminus-session-temp \
                --decrypt ${{ steps.cache.outputs.path }}
 
-        # Move the session file into place.
+        # Move the session file into place, to support DDEV.
         $exec mv terminus-session-temp $TERMINUS_CACHE_DIR/session
 
         # Check if restored session is still valid (normally lasts 24 hours).
@@ -126,10 +128,14 @@ runs:
         # Copy the session file to a mounted folder (in case of DDEV).
         $exec cp $TERMINUS_CACHE_DIR/session terminus-session-temp
 
-        # Encrypt the session file.
+        # Encrypt the session file using the "file descriptor" passphrase option
+        # (--passphrase-fd) instead of regular --passphrase because it's more
+        # secure to pipe the secret than pass it as a command argument (which
+        # would expose our machine token in the process list while encrypting).
         echo ${{ inputs.pantheon-machine-token }} | \
           gpg2 --passphrase-fd \
                --batch \
+               --yes \
                --pinentry-mode loopback \
                --output ${{ steps.cache.outputs.path }} \
                --symmetric terminus-session-temp
