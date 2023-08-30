@@ -126,7 +126,7 @@ runs:
 
         # Encrypt the session file.
         $exec cat $TERMINUS_CACHE_DIR/session | \
-          $exec echo ${{ inputs.pantheon-machine-token }} | \
+          $exec echo '${{ inputs.pantheon-machine-token }}' | \
             gpg2 \
               --symmetric \
               --output terminus-session-temp.gpg \
