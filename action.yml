@@ -98,13 +98,11 @@ runs:
         # file for the encryption/decryption steps avoids errors when the
         # destination file already exists, and makes it easier to support DDEV.
         echo ${{ inputs.pantheon-machine-token }} | \
-          gpg2 \
-            --decrypt \
-            --output terminus-session-temp \
-            --passphrase-fd \
-            --batch \
-            --pinentry loopback \
-            ${{ steps.cache.outputs.path }}
+          gpg2 --output terminus-session-temp \
+               --passphrase-fd \
+               --batch \
+               --pinentry loopback \
+               --decrypt ${{ steps.cache.outputs.path }}
 
         # Move the session file into place.
         $exec mv terminus-session-temp $TERMINUS_CACHE_DIR/session
@@ -119,23 +117,25 @@ runs:
         Actions cache path
       id: encrypt
       if: steps.decrypt.outcome != 'success'
+      working-directory: ${{ runner.temp }}
       run: |
         # Initiate a new Terminus session because the old one was missing or
         # expired, and encrypt new session file into GitHub Actions cache path.
         $exec terminus auth:login --machine-token ${{ inputs.pantheon-machine-token }}
 
+        # Copy the session file to a mounted folder (in case of DDEV).
+        $exec cp $TERMINUS_CACHE_DIR/session terminus-session-temp
+
         # Encrypt the session file.
         echo ${{ inputs.pantheon-machine-token }} | \
-          $exec gpg2 \
-            --symmetric \
-            --output terminus-session-temp.gpg \
-            --passphrase-fd \
-            --batch \
-            --pinentry-mode loopback \
-            $TERMINUS_CACHE_DIR/session
+          gpg2 --passphrase-fd \
+               --batch \
+               --pinentry-mode loopback \
+               --output ${{ steps.cache.outputs.path }} \
+               --symmetric terminus-session-temp
 
-        # Move the encrypted session file into the cache path.
-        mv terminus-session-temp.gpg ${{ steps.cache.outputs.path }}
+        # Remove the temporary session file we copied.
+        rm terminus-session
       shell: bash
 
     - name: Save encrypted Terminus session file into GitHub Actions cache
