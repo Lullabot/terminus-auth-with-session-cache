@@ -125,14 +125,14 @@ runs:
         $exec terminus auth:login --machine-token ${{ inputs.pantheon-machine-token }}
 
         # Encrypt the session file.
-        $exec cat $TERMINUS_CACHE_DIR/session | \
-          $exec echo "${{ inputs.pantheon-machine-token }}" | \
-            gpg2 \
-              --symmetric \
-              --output terminus-session-temp.gpg \
-              --passphrase-fd \
-              --batch \
-              --pinentry-mode loopback
+        echo ${{ inputs.pantheon-machine-token }} | \
+          $exec gpg2 \
+            --symmetric \
+            --output terminus-session-temp.gpg \
+            --passphrase-fd \
+            --batch \
+            --pinentry-mode loopback \
+            $TERMINUS_CACHE_DIR/session
 
         # Move the encrypted session file into the cache path.
         mv terminus-session-temp.gpg ${{ steps.cache.outputs.path }}
