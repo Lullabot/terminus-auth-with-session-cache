@@ -135,7 +135,7 @@ runs:
                --symmetric terminus-session-temp
 
         # Remove the temporary session file we copied.
-        rm terminus-session
+        rm terminus-session-temp
       shell: bash
 
     - name: Save encrypted Terminus session file into GitHub Actions cache
