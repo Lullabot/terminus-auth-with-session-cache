@@ -81,8 +81,7 @@ runs:
       with:
         path: ${{ steps.cache.outputs.path }}
         key: ${{ steps.cache.outputs.key }}
-        restore-keys: |
-          ${{ steps.cache.outputs.restore-key }}
+        restore-keys: ${{ steps.cache.outputs.restore-key }}
         enableCrossOsArchive: true
 
     - name: Decrypt cached session file and move into Terminus cache directory
@@ -97,7 +96,7 @@ runs:
         # Decrypt the session file using the "file descriptor" passphrase option
         # (--passphrase-fd) instead of regular --passphrase because it's more
         # secure to pipe the secret than to pass it as a command argument (which
-        # would expose our machine token in the process list while decrypting).
+        # would expose our machine token in the process list during decryption).
         echo ${{ inputs.pantheon-machine-token }} | \
           gpg2 --passphrase-fd \
                --batch \
@@ -131,7 +130,7 @@ runs:
         # Encrypt the session file using the "file descriptor" passphrase option
         # (--passphrase-fd) instead of regular --passphrase because it's more
         # secure to pipe the secret than pass it as a command argument (which
-        # would expose our machine token in the process list while encrypting).
+        # would expose our machine token in the process list during encryption).
         echo ${{ inputs.pantheon-machine-token }} | \
           gpg2 --passphrase-fd \
                --batch \
