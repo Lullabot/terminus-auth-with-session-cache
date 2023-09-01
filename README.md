@@ -56,7 +56,7 @@ jobs:
         with:
           pantheon-machine-token: ${{ secrets.PANTHEON_MACHINE_TOKEN }}
           # Set 'ddev: true' if using DDEV in GitHub Actions.
-          ddev: false
+          # ddev: true
       - name: Example step, clear caches on each site
         run: ddev terminus drush ${{ matrix.site-name }}.live -- cache:rebuild
         shell: bash
