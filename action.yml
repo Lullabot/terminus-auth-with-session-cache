@@ -1,13 +1,14 @@
 name: Authenticate Terminus from existing session, or initiate new session
 description: Restores a Pantheon Terminus session by decrypting the cached
   session file and copying it into place. If existing session is missing or
-  expired, initiates a new session, then encrypts and saves it to Actions cache.
-  Also, installs Terminus on host if needed.
+  expired (or 'force-new-session' is true), initiates a new session, then
+  encrypts and saves it to Actions cache. Also, installs Terminus on host if
+  needed.
 
 inputs:
   pantheon-machine-token:
-    description: Pantheon Terminus machine token, used as the gpg "symmetric"
-      encryption passphrase to decrypt the terminus session file.
+    description: Pantheon Terminus machine token, also used as the gpg
+      "symmetric" encryption passphrase to decrypt the terminus session file.
     required: true
   force-new-session:
     description: Set this to true to skip pulling session from cache and force
@@ -16,7 +17,8 @@ inputs:
     required: false
     default: false
   ddev:
-    description: Set to TRUE to authenticate Terminus inside the DDEV container.
+    description: Set to TRUE to authenticate Terminus inside the DDEV container
+      instead of the host.
     required: false
     default: false
 
