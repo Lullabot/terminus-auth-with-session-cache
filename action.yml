@@ -118,7 +118,6 @@ runs:
         Actions cache path
       id: encrypt
       if: steps.decrypt.outcome != 'success'
-      working-directory: ${{ runner.temp }}
       run: |
         # Initiate a new Terminus session because the old one was missing or
         # expired, and encrypt new session file into GitHub Actions cache path.
