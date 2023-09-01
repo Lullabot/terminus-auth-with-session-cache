@@ -6,8 +6,9 @@ to authenticate at the same time.
 
 ## DDEV
 If you use [DDEV](https://ddev.com/) in GitHub Actions, you can pass "`ddev:
-true`" to authenticate Terminus inside the DDEV container. Before calling this
-action with "`ddev: true`", install and start DDEV with one of these actions:
+true`" to authenticate Terminus inside the DDEV container instead of the host
+(GitHub Actions job runner). Before calling this action with "`ddev: true`",
+install and start DDEV with one of these actions:
 
 - Official: [Setup DDEV in Github Workflows](https://github.com/marketplace/actions/setup-ddev-in-github-workflows)
 - [Drainpipe](https://github.com/Lullabot/drainpipe)'s version has additional settings for configuring SSH keys, git user, and composer cache directory: [action.yml](https://github.com/Lullabot/drainpipe/blob/main/scaffold/github/actions/common/ddev/action.yml)
