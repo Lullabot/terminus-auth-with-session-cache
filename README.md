@@ -29,8 +29,9 @@ jobs:
     runs-on: ubuntu-22.04
     # Always store production secrets in a GitHub "Environment" that restricts
     # which branches can deploy to it, and protect those branches with rules
-    # including code review and security tests.
+    # including code reviews and security tests.
     # @see https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment
+    # environment: <environment-name>
     environment: Pantheon
     steps:
       - name: Populate a new Terminus session in cache before dispatching the
@@ -86,6 +87,7 @@ jobs:
           force-new-session: true
   TerminusGetProdSession:
     runs-on: ubuntu-22.04
+    # environment: <environment-name>
     environment: Pantheon
     steps:
       - name: Refresh the Production Terminus session in cache
