@@ -35,8 +35,8 @@ runs:
 
         # Also, install Terminus if missing.
         hash terminus 2> /dev/null || \
-          curl -O https://github.com/pantheon-systems/terminus/releases/download/3.6.2/terminus.phar && \
-          php installer.phar install &> /dev/null
+          curl -O https://raw.githubusercontent.com/pantheon-systems/terminus-installer/master/builds/installer.phar && \
+          php installer.phar install --install-version=3.6.2 &> /dev/null
       shell: bash
 
     - name: Set some environment variables when using DDEV
